@@ -44,21 +44,17 @@ helpmsg()
 	echo ""
 	echo "		crea un jar o un war del progetto alla revision specificata (o alla head se omessa) e eventualmente lo copia nel path specificato"
 	echo ""
-	echo "fulldist <nome_progetto> [revision] [path]"
-	echo ""
-	echo "		come dist, ma preventivamente pubblica tutte le librerie"
-	echo ""
 	echo "auto"
 	echo ""
 	echo "		compila tutti i progetti all'ultima revision e li copia nella cartella [$DIR_DIST_AUTO]"
 	echo ""
-	echo "publibs"
+	echo "pub"
 	echo ""
 	echo "		compila e pubblica tutte le librerie censite nel file [$FILE_PROGETTI]"
 	echo "		un progetto e' riconosciuto come libreria se e' censito con un nome che inizi con 'lib'"
 	echo "		le librerie vengono compilate e pubblicate nell'ordine in cui sono censite nel file [$FILE_PROGETTI]"
 	echo ""
-	echo "list"
+	echo "ls"
 	echo ""
 	echo "		lista dei progetti disponibili contenuti nel file [$FILE_PROGETTI]"
 	echo ""
@@ -311,27 +307,7 @@ then
 	exit $RET
 fi
 
-if [ "$1" = "fulldist" ]
-then
-	builder_check_pidfile
-
-	builder_publibs
-	
-	shift
-	builder_dist $1 $2 $3
-	RET=$?
-	if [ $RET -eq 0 ]
-	then
-		echo ""
-		builder_getlastbuild
-		echo ""
-	fi
-	
-	builder_remove_pidfile
-	exit $RET
-fi
-
-if [ "$1" = "publibs" ]
+if [ "$1" = "pub" ]
 then
 	builder_check_pidfile
 	
@@ -341,7 +317,7 @@ then
 	exit 0
 fi
 
-if [ "$1" = "list" ]
+if [ "$1" = "ls" ]
 then
 	echo ""
 	echolog "progetti disponibili:"
