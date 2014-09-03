@@ -66,6 +66,10 @@ helpmsg()
 	echo ""
 	echo "		stampa il path dell'ultima build effettuata"
 	echo ""
+	echo "rev"
+	echo ""
+	echo "		get latest revision"
+	echo ""
 	echo "svn"
 	echo ""
 	echo "		wrapper per il client svn"
@@ -248,6 +252,40 @@ builder_check_pidfile()
 	echo $$ > "$FILE_PID"
 }
 
+builder_get_rev()
+{
+	if [ -z "$1" ]
+	then
+		helpmsg
+		return 1
+	fi
+	
+	revision=$2
+	
+	if [ -z "$2" ]
+	then
+		revision="head"
+	fi
+	
+	progetto=$1
+	
+	
+	if ! grep "^$progetto" "$FILE_PROGETTI" > /dev/null
+	then
+		echolog "il progetto [$progetto] non esiste"
+		return 1
+	fi
+	
+	if ! [ -d "$DIR_REPO/$progetto" ]
+	then
+		echolog ""
+	fi
+	
+	revision=`$DIR_BIN/svnwrapper.sh rev "$DIR_REPO/$progetto"`
+	
+	echo $revision
+}
+
 builder_remove_pidfile()
 {
 	if [ -f "$FILE_PID" ]; then	rm -f "$FILE_PID"; fi
@@ -344,6 +382,18 @@ fi
 if [ "$1" = "last" ]
 then
 	builder_getlastbuild
+	RET=$?
+	
+	builder_remove_pidfile
+	exit $RET
+fi
+
+if [ "$1" = "rev" ]
+then
+	builder_check_pidfile
+	
+	shift
+	builder_get_rev $@
 	RET=$?
 	
 	builder_remove_pidfile
