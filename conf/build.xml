@@ -35,12 +35,23 @@
 	</path>
 
 	<!-- condizioni -->
-	<condition property="dir.web.exists">
+	<condition property="make_war">
 		<available file="${dir.web}" type="dir" />
 	</condition>
-
-	<condition property="file.manifest.exists">
-		<available file="${${dir.conf}/MANIFEST.MF}" type="file" />
+	
+	<condition property="make_jar">
+		<and>
+			<not>
+				<available file="${dir.web}" type="dir" />
+			</not>
+			<not>
+				<available file="${dir.conf}/MANIFEST.MF" type="file" />
+			</not>
+		</and>
+	</condition>
+	
+	<condition property="make_runjar">
+		<available file="${dir.conf}/MANIFEST.MF" type="file" />
 	</condition>
 
 	<!-- TARGETS -->
@@ -74,11 +85,11 @@
 		</javac>
 	</target>
 
-	<target name="dist-runnable" depends="compile">
+	<target name="dist-runnable" depends="compile" if="make_runjar">
 		<property name="jar.dipendenze" value="${dir.lib.compile}/${ivy.module}-${ivy.revision}-dipendenze.jar" />
 
 		<jar jarfile="${jar.dipendenze}">
-			<zipgroupfileset dir="${dir.lib.deploy}/">
+			<zipgroupfileset dir="${dir.lib.compile}/">
 				<include name="**/*.jar" />
 			</zipgroupfileset>
 		</jar>
@@ -100,7 +111,7 @@
 		<antcall target="clean" />
 	</target>
 
-	<target name="dist_jar" depends="compile" unless="dir.web.exists">
+	<target name="dist_jar" depends="compile" if="make_jar">
 		<jar destfile="${builder.dir.dist}/${ivy.organisation}.${ivy.module}/${ivy.module}-${snapshot.revision}.jar">
 			<fileset dir="${dir.classes}" />
 
@@ -113,7 +124,7 @@
 		<antcall target="clean" />
 	</target>
 
-	<target name="dist_war" depends="compile" if="dir.web.exists">
+	<target name="dist_war" depends="compile" if="make_war">
 		<ivy:retrieve sync="true" pattern="${dir.lib.deploy}/${pattern.retrieve}" conf="deploy" />
 		<property name="dist.filename" value="${builder.dir.dist}/${ivy.organisation}.${ivy.module}/${ivy.module}-${snapshot.revision}.war" />
 
@@ -133,7 +144,7 @@
 		<antcall target="clean" />
 	</target>
 
-	<target name="dist" depends="dist_jar,dist_war">
+	<target name="dist" depends="dist-runnable,dist_jar,dist_war">
 	</target>
 
 	<target name="publish" depends="dist">
