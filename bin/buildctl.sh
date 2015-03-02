@@ -329,7 +329,7 @@ fi
 
 if [ "$1" = "dist" ]
 then
-	builder_check_pidfile
+	#builder_check_pidfile
 
 	shift
 	builder_dist $1 $2 $3

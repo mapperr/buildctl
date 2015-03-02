@@ -43,7 +43,17 @@ if ! [ -z "$REVISION" ]
 then
 	REVISION_OPT="-Dvcs.revision=$REVISION"
 fi
-	
+
+UUID_BUILD=`uuidgen`
+
+if [ -z "$UUID_BUILD" ]
+then
+	TS=`date +'%Y%m%d%H%M%S'`
+	PRJNAME=`basename $DIR_ROOT_PROGETTO`
+	UUID_BUILD="$PRJNAME-$REVISION-$TS"
+fi
+
+DIR_BUILD="$HOME/.build_tmp/$UUID_BUILD"
 FILE_IVYSETTINGS="$DIR_CONF/ivysettings.xml"
 FILE_BUILDFILE="$DIR_CONF/build.xml"
 ANT_DIR_IVY="$DIR_IVY"
@@ -51,6 +61,7 @@ ANT_DIR_DIST="$DIR_DIST"
 
 if [ "$OS" = "cygwin" ]
 then
+	DIR_BUILD=`cygpath -m $DIR_BUILD`
 	FILE_BUILDFILE=`cygpath -m $FILE_BUILDFILE`
 	FILE_IVYSETTINGS=`cygpath -m $FILE_IVYSETTINGS`
 	DIR_ROOT_PROGETTO=`cygpath -m $DIR_ROOT_PROGETTO`
@@ -60,5 +71,5 @@ fi
 
 echolog "esecuzione antwrapper per [$DIR_ROOT_PROGETTO] con target [$TARGET]"
 $DIR_ANT/bin/ant -lib "$ANT_DIR_IVY" -lib "$ANT_DIR_IVY/lib" -Dbuilder.ivy.settings="$FILE_IVYSETTINGS" -Divy.default.ivy.user.dir="$ANT_DIR_IVY" \
-	-Dbuilder.dir.dist="$ANT_DIR_DIST" -Dbasedir="$DIR_ROOT_PROGETTO" $REVISION_OPT -f "$FILE_BUILDFILE" $TARGET
+	-Dbuilder.dir.dist="$ANT_DIR_DIST" -Dbasedir="$DIR_ROOT_PROGETTO" -Ddir.build=$DIR_BUILD $REVISION_OPT -f "$FILE_BUILDFILE" $TARGET
 exit $?
