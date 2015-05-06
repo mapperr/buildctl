@@ -23,7 +23,7 @@
 		</and>
 	</condition>
 	<tstamp>
-		<format property="current.timestamp" pattern="yyyyMMddHHmmss" />
+		<format property="current.timestamp" pattern="yyyy.MMdd.HHmm.ss" />
 	</tstamp>
 	<property name="snapshot.revision" value="${ivy.revision}.${branch.fragment}${vcs.fragment}${current.timestamp}" />
 
@@ -35,22 +35,11 @@
 	</path>
 
 	<!-- condizioni -->
-	<condition property="make_war">
+	<condition property="dir.web.exists">
 		<available file="${dir.web}" type="dir" />
 	</condition>
-	
-	<condition property="make_jar">
-		<and>
-			<not>
-				<available file="${dir.web}" type="dir" />
-			</not>
-			<not>
-				<available file="${dir.conf}/MANIFEST.MF" type="file" />
-			</not>
-		</and>
-	</condition>
-	
-	<condition property="make_runjar">
+
+	<condition property="file.manifest.exists">
 		<available file="${dir.conf}/MANIFEST.MF" type="file" />
 	</condition>
 
@@ -72,6 +61,7 @@
 		<mkdir dir="${dir.build}" />
 		<mkdir dir="${dir.classes}" />
 		<mkdir dir="${dir.lib.compile}" />
+		<mkdir dir="${dir.lib.deploy}" />
 	</target>
 
 	<target name="resolve" depends="init">
@@ -80,16 +70,27 @@
 	</target>
 
 	<target name="compile" depends="resolve">
-		<javac includeantruntime="false" srcdir="${dir.src}" destdir="${dir.classes}" encoding="ISO-8859-1" debug="true" debuglevel="lines,vars,source">
+		<javac includeantruntime="false" target="1.7" srcdir="${dir.src}" destdir="${dir.classes}" encoding="ISO-8859-1" debug="true" debuglevel="lines,vars,source">
 			<classpath refid="classpath" />
 		</javac>
 	</target>
 
-	<target name="dist-runnable" depends="compile" if="make_runjar">
+	<target name="dist_runnable_check">
+		<condition property="fai_un_runnable_jar">
+			<and>
+				<available file="${dir.conf}/MANIFEST.MF" type="file" />
+				<not>
+					<available file="${dir.web}" type="dir" />
+				</not>
+			</and>
+		</condition>
+	</target>
+	<target name="dist_runnable" depends="compile,dist_runnable_check" if="fai_un_runnable_jar">
+		<echo message="passo dal target dist-runnable"/>
 		<property name="jar.dipendenze" value="${dir.lib.compile}/${ivy.module}-${ivy.revision}-dipendenze.jar" />
 
 		<jar jarfile="${jar.dipendenze}">
-			<zipgroupfileset dir="${dir.lib.compile}/">
+			<zipgroupfileset dir="${dir.lib.deploy}/">
 				<include name="**/*.jar" />
 			</zipgroupfileset>
 		</jar>
@@ -111,7 +112,20 @@
 		<antcall target="clean" />
 	</target>
 
-	<target name="dist_jar" depends="compile" if="make_jar">
+	<target name="dist_jar_check">
+		<condition property="fai_un_jar">
+			<and>
+				<not>
+					<available file="${dir.conf}/MANIFEST.MF" type="file" />
+				</not>
+				<not>
+					<available file="${dir.web}" type="dir" />
+				</not>
+			</and>
+		</condition>
+	</target>
+	<target name="dist_jar" depends="compile,dist_jar_check" if="fai_un_jar">
+		<echo message="passo dal target dist_jar"/>
 		<jar destfile="${builder.dir.dist}/${ivy.organisation}.${ivy.module}/${ivy.module}-${snapshot.revision}.jar">
 			<fileset dir="${dir.classes}" />
 
@@ -124,15 +138,25 @@
 		<antcall target="clean" />
 	</target>
 
-	<target name="dist_war" depends="compile" if="make_war">
+	<target name="dist_war_check">
+		<condition property="fai_un_war">
+			<and>
+				<not>
+					<available file="${dir.conf}/MANIFEST.MF" type="file" />
+				</not>
+				<available file="${dir.web}" type="dir" />
+			</and>
+		</condition>
+	</target>
+	<target name="dist_war" depends="compile,dist_war_check" if="fai_un_war">
 		<ivy:retrieve sync="true" pattern="${dir.lib.deploy}/${pattern.retrieve}" conf="deploy" />
 		<property name="dist.filename" value="${builder.dir.dist}/${ivy.organisation}.${ivy.module}/${ivy.module}-${snapshot.revision}.war" />
 
 		<war destfile="${dist.filename}">
-			<fileset dir="${dir.web}" excludes="WEB-INF/lib/**" />
+			<fileset dir="${dir.web}" excludes="WEB-INF/classes/** WEB-INF/lib/**" />
 
-			<!-- esclusione delle resources -->
-			<!-- <fileset dir="${dir.web}" excludes="WEB-INF/lib/** resources/**"/> -->
+			<!-- esclusione delle risorse statiche -->
+			<!-- <fileset dir="${dir.web}" excludes="WEB-INF/classes/** WEB-INF/lib/** static/**"/> -->
 
 			<classes dir="${dir.classes}" />
 
@@ -144,10 +168,10 @@
 		<antcall target="clean" />
 	</target>
 
-	<target name="dist" depends="dist-runnable,dist_jar,dist_war">
+	<target name="dist" depends="dist_runnable,dist_jar,dist_war">
 	</target>
 
-	<target name="publish" depends="dist">
+	<target name="publish-local" depends="dist">
 		<ivy:publish resolver="local" overwrite="true" status="integration">
 			<artifacts pattern="${builder.dir.dist}/${ivy.organisation}.${ivy.module}/${ivy.module}-${snapshot.revision}.[ext]" />
 		</ivy:publish>
